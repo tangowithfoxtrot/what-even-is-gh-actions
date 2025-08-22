@@ -61,7 +61,13 @@ async function buildFromSource(targetTriple) {
 async function getBinary() {
   const targetTriple = `${getArch()}-${getPlatform()}`;
   const binaryName = process.platform === 'win32' ? 'sm-action.exe' : 'sm-action';
-  const binaryPath = path.join(__dirname, 'dist', targetTriple, binaryName);
+  const binaryPath = path.join(
+    __dirname,
+    "target",
+    targetTriple,
+    "release",
+    binaryName
+  );
 
   console.debug(`Looking for binary at: ${binaryPath}`);
 
@@ -70,7 +76,13 @@ async function getBinary() {
     await buildFromSource(targetTriple);
 
     // After building, the binary should be in target/TRIPLE/release/
-    const builtBinaryPath = path.join(__dirname, 'target', targetTriple, 'release', binaryName);
+    const builtBinaryPath = path.join(
+      __dirname,
+      "target",
+      targetTriple,
+      "release",
+      binaryName
+    );
     if (fs.existsSync(builtBinaryPath)) {
       // Ensure dist directory exists
       const distDir = path.dirname(binaryPath);
