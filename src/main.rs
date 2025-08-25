@@ -104,9 +104,12 @@ fn mask_value(value: &str) {
 
 fn issue_file_command(mut file: std::fs::File, key: &str, value: &str) -> Result<()> {
     let delimiter = format!("ghadelimiter_{}", uuid::Uuid::new_v4());
-    writeln!(file, "{key}<<{delimiter}")?;
-    writeln!(file, "{value}")?;
-    writeln!(file, "{delimiter}")?;
+    writeln!(
+        file,
+        r#"{key}<<{delimiter}
+{value}
+{delimiter}"#
+    )?;
     file.flush()?; // ensure the data is written to disk
     Ok(())
 }
