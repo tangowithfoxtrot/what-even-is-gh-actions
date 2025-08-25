@@ -13,7 +13,6 @@ permissions:
 
 env:
   CARGO_TERM_COLOR: always
-  # CARGO_TARGET_DIR: ./dist
 
 jobs:
   build:
@@ -95,13 +94,9 @@ jobs:
             ${{ runner.os }}-dist-
 
       - name: Build
-        env:
-          CARGO_TARGET_DIR: ./dist
         run: ${{ matrix.build }}
 
       - name: Run tests
-        env:
-          CARGO_TARGET_DIR: ./dist
         run: |
           cargo test --release || { echo "Unit tests failed" >&2; exit 1; }
 
