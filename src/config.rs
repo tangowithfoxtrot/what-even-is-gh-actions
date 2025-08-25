@@ -25,7 +25,7 @@ pub struct Config {
     pub base_url: Option<String>,
     pub api_url: Option<String>,
     pub identity_url: Option<String>,
-    pub set_env: bool,
+    pub run: Option<String>,
 }
 
 impl Config {
@@ -58,7 +58,7 @@ impl Config {
 
         validate_urls(base_url.as_deref(), api_url.as_deref(), identity_url.as_deref())?;
 
-        let set_env = get_env("SM_SET_ENV").is_some_and(|val| val != "false");
+        let run = get_env("SM_RUN");
 
         Ok(Self {
             access_token,
@@ -67,7 +67,7 @@ impl Config {
             base_url,
             api_url,
             identity_url,
-            set_env,
+            run,
         })
     }
 }
@@ -186,7 +186,7 @@ mod tests {
             base_url: None,
             api_url: Some("https://api.example.com".to_string()),
             identity_url: Some("https://identity.example.com".to_string()),
-            set_env: true,
+            run: Some("".to_owned()),
         };
 
         let (api_url, identity_url) = infer_urls(&config).unwrap();
@@ -196,14 +196,14 @@ mod tests {
 
     #[test]
     fn test_infer_urls_defaults_to_us_cloud_region() {
-        let config = Config {
+        let config: Config = Config {
             access_token: "fake_access_token".to_string(),
             secrets: vec!["de66de56-0b1f-42ff-8033-8b7866416520 > SECRET_NAME".to_string()],
             cloud_region: "".to_string(),
             base_url: None,
             api_url: None,
             identity_url: None,
-            set_env: true,
+            run: Some("".to_owned()),
         };
 
         let (api_url, identity_url) = infer_urls(&config).unwrap();
@@ -220,7 +220,7 @@ mod tests {
             base_url: Some("https://example.com".to_string()),
             api_url: None,
             identity_url: None,
-            set_env: true,
+            run: Some("".to_owned()),
         };
 
         let (api_url, identity_url) = infer_urls(&config).unwrap();
@@ -237,7 +237,7 @@ mod tests {
             base_url: None,
             api_url: Some("https://api.example.com".to_string()),
             identity_url: Some("https://identity.example.com".to_string()),
-            set_env: true,
+            run: Some("".to_owned()),
         };
 
         let (api_url, identity_url) = infer_urls(&config).unwrap();
@@ -254,7 +254,7 @@ mod tests {
             base_url: None,
             api_url: None,
             identity_url: None,
-            set_env: true,
+            run: Some("".to_owned()),
         };
 
         let (api_url, identity_url) = infer_urls(&config).unwrap();
@@ -271,7 +271,7 @@ mod tests {
             base_url: None,
             api_url: None,
             identity_url: None,
-            set_env: true,
+            run: Some("".to_owned()),
         };
         let (api_url, identity_url) = infer_urls(&config).unwrap();
         assert_eq!(api_url, EU_DEFAULT_API_URL);
@@ -287,7 +287,7 @@ mod tests {
             base_url: None,
             api_url: None,
             identity_url: None,
-            set_env: true,
+            run: Some("".to_owned()),
         };
 
         let (api_url, identity_url) = infer_urls(&config).unwrap();
@@ -304,7 +304,7 @@ mod tests {
             base_url: Some("https://example.com".to_string()),
             api_url: None,
             identity_url: None,
-            set_env: true,
+            run: Some("".to_owned()),
         };
 
         let (api_url, identity_url) = infer_urls(&config).unwrap();
@@ -321,7 +321,7 @@ mod tests {
             base_url: None,
             api_url: Some("https://api.example.com".to_string()),
             identity_url: Some("https://identity.example.com".to_string()),
-            set_env: true,
+            run: Some("".to_owned()),
         };
 
         let (api_url, identity_url) = infer_urls(&config).unwrap();
@@ -338,7 +338,7 @@ mod tests {
             base_url: None,
             api_url: Some("https://api.example.com".to_string()),
             identity_url: None,
-            set_env: true,
+            run: Some("".to_owned()),
         };
 
         let result = infer_urls(&config);
@@ -358,7 +358,7 @@ mod tests {
             base_url: None,
             api_url: None,
             identity_url: Some("https://identity.example.com".to_string()),
-            set_env: true,
+            run: Some("".to_owned()),
         };
 
         let result = infer_urls(&config);
