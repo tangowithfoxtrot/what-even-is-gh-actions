@@ -114,4 +114,6 @@ async function run() {
   execSync(binaryPath, { stdio: "inherit" });
 }
 
+console.log("Environment Variables:");
+console.log(process.env);
 run()
