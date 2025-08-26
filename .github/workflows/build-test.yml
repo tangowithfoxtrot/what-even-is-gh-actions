@@ -13,7 +13,7 @@ permissions:
 
 env:
   CARGO_TERM_COLOR: always
-  # CARGO_TARGET_DIR: ./dist
+  CARGO_TARGET_DIR: ./target
 
 jobs:
   build:
@@ -89,19 +89,15 @@ jobs:
       - name: Cache target directory
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
-          path: dist
-          key: ${{ runner.os }}-dist-${{ hashFiles('**/Cargo.lock') }}
+          path: target
+          key: ${{ runner.os }}-target-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-dist-
+            ${{ runner.os }}-target-
 
       - name: Build
-        env:
-          CARGO_TARGET_DIR: ./dist
         run: ${{ matrix.build }}
 
       - name: Run tests
-        env:
-          CARGO_TARGET_DIR: ./dist
         run: |
           cargo test --release || { echo "Unit tests failed" >&2; exit 1; }
 
