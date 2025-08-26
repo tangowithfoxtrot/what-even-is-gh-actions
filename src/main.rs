@@ -65,11 +65,15 @@ async fn main() -> Result<()> {
             )
         })?;
 
-    for secret in secrets.data.iter() {
-        id_to_name_map
-            .get(&secret.id)
-            .map(|name| set_secrets(name, &secret.value, config.set_env))
-            .transpose()?;
+    let secret_envs = prepare_secret_env_vars(&secrets.data, &id_to_name_map);
+
+    if let Some(run_cmd) = &config.run {
+        execute_run_command(run_cmd, secret_envs)?;
+    } else {
+        for (name, value) in secret_envs.iter() {
+            println!("Setting secret: {name}");
+            set_secrets(name, value)?;
+        }
     }
 
     Ok(())
@@ -104,40 +108,78 @@ fn mask_value(value: &str) {
 
 fn issue_file_command(mut file: std::fs::File, key: &str, value: &str) -> Result<()> {
     let delimiter = format!("ghadelimiter_{}", uuid::Uuid::new_v4());
-    writeln!(file, "{key}<<{delimiter}")?;
-    writeln!(file, "{value}")?;
-    writeln!(file, "{delimiter}")?;
+    writeln!(
+        file,
+        r#"{key}<<{delimiter}
+{value}
+{delimiter}"#
+    )?;
     file.flush()?; // ensure the data is written to disk
     Ok(())
 }
 
 /// Sets a secret in the GitHub Actions environment.
-fn set_secrets(secret_name: &str, secret_value: &str, set_env: bool) -> Result<()> {
+fn set_secrets(secret_name: &str, secret_value: &str) -> Result<()> {
     mask_value(secret_value);
 
-    if set_env {
-        let env_path = get_env("GITHUB_ENV").unwrap_or("/dev/null".to_owned());
-        debug!("Writing to GITHUB_ENV: {env_path}");
-        let env_file = OpenOptions::new()
-            .create(true) // needed for unit tests
-            .append(true)
-            .open(&env_path)?;
-
-        issue_file_command(env_file, secret_name, secret_value)?;
-        debug!("Successfully wrote '{secret_name}' to GITHUB_ENV");
-    }
-
-    let output_path = get_env("GITHUB_OUTPUT").unwrap_or("/dev/null".to_owned());
-    debug!("Writing to GITHUB_OUTPUT: {output_path}");
-    let output_file = OpenOptions::new()
+    let env_path = get_env("GITHUB_ENV").unwrap_or("/dev/null".to_owned());
+    debug!("Writing to GITHUB_ENV: {env_path}");
+    let env_file = OpenOptions::new()
         .create(true) // needed for unit tests
         .append(true)
-        .open(&output_path)?;
+        .open(&env_path)?;
 
-    issue_file_command(output_file, secret_name, secret_value)?;
-    debug!("Successfully wrote '{secret_name}' to GITHUB_OUTPUT");
+    issue_file_command(env_file, secret_name, secret_value)?;
+    debug!("Successfully wrote '{secret_name}' to GITHUB_ENV");
+
+    // Cannot set GITHUB_OUTPUT dynamically in composite actions: https://github.com/actions/runner/issues/2515
 
     Ok(())
+}
+
+/// Executes a run command with the provided secrets as environment variables.
+fn execute_run_command(run_cmd: &str, secret_envs: HashMap<String, String>) -> Result<()> {
+    if run_cmd.trim().is_empty() {
+        return Ok(());
+    }
+
+    let shell = match std::env::consts::OS {
+        "windows" => "powershell",
+        _ => "/bin/sh", // should be safe for any POSIX OS
+    };
+
+    let status = std::process::Command::new(shell)
+        .arg("-c")
+        .arg(run_cmd)
+        .envs(secret_envs)
+        .status();
+
+    match status {
+        Ok(exit_status) if exit_status.success() => {
+            debug!("Commands executed successfully.");
+            Ok(())
+        }
+        Ok(exit_status) => Err(anyhow::anyhow!(
+            "Commands exited with non-zero status: {}",
+            exit_status
+        )),
+        Err(e) => Err(anyhow::anyhow!("Failed to execute commands: {}", e)),
+    }
+}
+
+/// Converts secrets data into environment variables based on the ID to name mapping.
+fn prepare_secret_env_vars(
+    secrets_data: &[bitwarden_sm::secrets::SecretResponse],
+    id_to_name_map: &HashMap<Uuid, String>,
+) -> HashMap<String, String> {
+    secrets_data
+        .iter()
+        .filter_map(|secret| {
+            id_to_name_map
+                .get(&secret.id)
+                .map(|name| (name.clone(), secret.value.clone()))
+        })
+        .collect()
 }
 
 #[cfg(test)]
@@ -155,29 +197,23 @@ mod tests {
         // Create temporary files for testing
         let temp_dir = std::env::temp_dir();
         let env_path = temp_dir.join(format!("github_env_test_{}", uuid::Uuid::new_v4()));
-        let output_path = temp_dir.join(format!("github_output_test_{}", uuid::Uuid::new_v4()));
 
         // Set environment variables to point to our temp files
         unsafe {
             std::env::set_var("GITHUB_ENV", &env_path);
-            std::env::set_var("GITHUB_OUTPUT", &output_path);
         }
 
         // Run the function
-        set_secrets(secret_name, secret_value, true).unwrap();
+        set_secrets(secret_name, secret_value).unwrap();
 
-        // Check if the files were created and contain the expected values
+        // Check if the file was created and contains the expected values
         let env_content = std::fs::read_to_string(&env_path).unwrap();
-        let output_content = std::fs::read_to_string(&output_path).unwrap();
 
         assert!(env_content.contains(&format!("{secret_name}<<ghadelimiter_")));
         assert!(env_content.contains(&secret_value));
-        assert!(output_content.contains(&format!("{secret_name}<<ghadelimiter_")));
-        assert!(output_content.contains(&secret_value));
 
         // Clean up temp files
         let _ = std::fs::remove_file(&env_path);
-        let _ = std::fs::remove_file(&output_path);
     }
 
     #[test]
@@ -224,5 +260,43 @@ mod tests {
         ]);
 
         assert!(id_to_name_map.is_err());
+    }
+
+    #[test]
+    fn test_execute_run_command_success() {
+        let mut env_vars = HashMap::new();
+        env_vars.insert("SECRET1".to_string(), "value1".to_string());
+        env_vars.insert("SECRET2".to_string(), "value2".to_string());
+
+        // Test with a simple command that should succeed
+        let result = execute_run_command("echo 'Hello World'", env_vars);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_execute_run_command_failure() {
+        let env_vars = HashMap::new();
+
+        // Test with a command that should fail
+        let result = execute_run_command("exit 1", env_vars);
+        assert!(result.is_err());
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("Commands exited with non-zero status")
+        );
+    }
+
+    #[test]
+    fn test_execute_run_command_empty_command() {
+        let env_vars = HashMap::new();
+
+        let result = execute_run_command("", env_vars);
+        assert!(result.is_ok());
+
+        let env_vars2 = HashMap::new();
+        let result = execute_run_command("   ", env_vars2);
+        assert!(result.is_ok());
     }
 }

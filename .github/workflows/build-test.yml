@@ -13,7 +13,6 @@ permissions:
 
 env:
   CARGO_TERM_COLOR: always
-  # CARGO_TARGET_DIR: ./dist
 
 jobs:
   build:
@@ -95,13 +94,9 @@ jobs:
             ${{ runner.os }}-dist-
 
       - name: Build
-        env:
-          CARGO_TARGET_DIR: ./dist
         run: ${{ matrix.build }}
 
       - name: Run tests
-        env:
-          CARGO_TARGET_DIR: ./dist
         run: |
           cargo test --release || { echo "Unit tests failed" >&2; exit 1; }
 
@@ -115,28 +110,6 @@ jobs:
             echo "Test output: $test_stdout" >&2
             exit $exit_code
           fi
-
-      - name: Run the Action
-        id: rust-action
-        uses: ./
-        with:
-          access_token: ${{ secrets.TEST_SM_ACCESS_TOKEN }}
-          base_url: "https://vault.euqa.bitwarden.pw"
-          secrets: |
-            e9ce5e83-d5b9-46d8-91e8-b1e54d8a52d8 > SECRET_ONE
-            1e12e623-d4ce-43d2-a3d3-07918217d280 > SECRET_TWO
-
-      - name: Print Output from Rust sm-action
-        run: |
-          echo the following secrets should be masked:
-          echo "SECRET_ONE=$SECRET_ONE"
-          echo "SECRET_TWO=$SECRET_TWO"
-          echo
-
-          echo the following secrets should not be masked:
-          echo "$SECRET_ONE" | sed 's/./& /g'
-          echo "$SECRET_TWO" | sed 's/./& /g'
-          echo
 
       - name: Test existing sm-action
         id: sm-action
@@ -160,14 +133,57 @@ jobs:
           echo "$SECRET_TWO" | sed 's/./& /g'
           echo
 
-      - name: Compare outputs
+      - name: Run the Action
+        uses: ./
+        with:
+          access_token: ${{ secrets.TEST_SM_ACCESS_TOKEN }}
+          base_url: "https://vault.euqa.bitwarden.pw"
+          secrets: |
+            e9ce5e83-d5b9-46d8-91e8-b1e54d8a52d8 > RS_SECRET_ONE
+            1e12e623-d4ce-43d2-a3d3-07918217d280 > RS_SECRET_TWO
+
+      - name: Print Output from Rust sm-action
         run: |
-          if [ "${{ steps.rust-action.outputs.SECRET_ONE }}" != "${{ steps.sm-action.outputs.SECRET_ONE }}" ]; then
-            echo "SECRET_ONE does not match between sm-action and existing sm-action" >&2
+          echo the following secrets should be masked:
+          echo "RS_SECRET_ONE=$RS_SECRET_ONE"
+          echo "RS_SECRET_TWO=$RS_SECRET_TWO"
+          echo
+
+          echo the following secrets should not be masked:
+          echo "$RS_SECRET_ONE" | sed 's/./& /g'
+          echo "$RS_SECRET_TWO" | sed 's/./& /g'
+          echo
+
+      - name: Test the new `run` option
+        uses: ./
+        with:
+          access_token: ${{ secrets.TEST_SM_ACCESS_TOKEN }}
+          base_url: "https://vault.euqa.bitwarden.pw"
+          secrets: |
+            e9ce5e83-d5b9-46d8-91e8-b1e54d8a52d8 > RS_SECRET_ONE
+            1e12e623-d4ce-43d2-a3d3-07918217d280 > RS_SECRET_TWO
+          run: |
+            echo the following secrets should be masked:
+            echo "RS_SECRET_ONE=$RS_SECRET_ONE"
+            echo "RS_SECRET_TWO=$RS_SECRET_TWO"
+            echo
+
+            echo the following secrets should not be masked:
+            echo "$RS_SECRET_ONE" | sed 's/./& /g'
+            echo "$RS_SECRET_TWO" | sed 's/./& /g'
+            echo
+
+      - name: Compare outputs
+        env:
+          EXPECTED_TS_SECRET_ONE: ${{ steps.sm-action.outputs.SECRET_ONE }}
+          EXPECTED_TS_SECRET_TWO: ${{ steps.sm-action.outputs.SECRET_TWO }}
+        run: |
+          if [ "$RS_SECRET_ONE" != "$EXPECTED_TS_SECRET_ONE" ]; then
+            echo "RS_SECRET_ONE does not match between sm-action and existing sm-action" >&2
             exit 1
           fi
-          if [ "${{ steps.rust-action.outputs.SECRET_TWO }}" != "${{ steps.sm-action.outputs.SECRET_TWO }}" ]; then
-            echo "SECRET_TWO does not match between sm-action and existing sm-action" >&2
+          if [ "$RS_SECRET_TWO" != "$EXPECTED_TS_SECRET_TWO" ]; then
+            echo "RS_SECRET_TWO does not match between sm-action and existing sm-action" >&2
             exit 1
           fi
           echo "All outputs match successfully between sm-action and existing sm-action"

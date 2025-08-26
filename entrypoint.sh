@@ -65,12 +65,12 @@ main() {
   echo "Setting up bitwarden/sm-action"
 
   target_triple="$(arch)-$(os)"
-  if [ ! -e ./dist/"$target_triple"/sm-action ]; then
+  if [ ! -e ./target/"$target_triple"/sm-action ]; then
     echo "No sm-action binary found for target: $target_triple" >&2
     build_from_source
   fi
 
-  ./dist/"$target_triple"/release/sm-action
+  ./target/"$target_triple"/release/sm-action
 }
 
 # Run the script
