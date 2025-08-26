@@ -59,8 +59,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4.0.3
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
+          cache: "npm"
 
       - name: Install Node.js dependencies
         run: npm ci
@@ -111,6 +111,33 @@ jobs:
             echo "Test output: $test_stdout" >&2
             exit $exit_code
           fi
+
+      - name: Test `set_env=false`
+        id: set-env-false
+        uses: ./
+        with:
+          access_token: ${{ secrets.TEST_SM_ACCESS_TOKEN }}
+          base_url: "https://vault.euqa.bitwarden.pw"
+          set_env: false
+          secrets: |
+            e9ce5e83-d5b9-46d8-91e8-b1e54d8a52d8 > SECRET_NO_ENV_ONE
+            1e12e623-d4ce-43d2-a3d3-07918217d280 > SECRET_NO_ENV_TWO
+
+      - name: Ensure that `set_env=false` works correctly
+        run: |
+          echo set_env is false, so secrets should not be in env:
+          if [ -n "$SECRET_NO_ENV_ONE" ] || [ -n "$SECRET_NO_ENV_TWO" ]; then
+            echo "Secrets found in environment variables, but set_env is false" >&2
+            exit 1
+          else
+            echo "No secrets found in environment variables, as expected"
+          fi
+          echo
+
+          echo printing unredacted secrets from GITHUB_OUTPUT:
+          echo "${{ steps.set-env-false.outputs.SECRET_NO_ENV_ONE }}" | sed 's/./& /g'
+          echo "${{ steps.set-env-false.outputs.SECRET_NO_ENV_TWO }}" | sed 's/./& /g'
+          echo
 
       - name: Run the Action
         id: rust-action
