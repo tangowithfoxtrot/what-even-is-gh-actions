@@ -257,7 +257,7 @@ async function getBinary() {
     return binaryPath;
   }
 
-  console.warn(`No sm-action binary found for target: ${targetTriple}`);
+  debug(`No sm-action binary found for target: ${targetTriple}`);
 
   // Try to download the pre-built binary first
   const downloadSuccess = await downloadBinary(targetTriple, binaryPath);
@@ -267,7 +267,7 @@ async function getBinary() {
   }
 
   // Fallback to building from source
-  console.log("Download failed, building from source...");
+  console.log("sm-action binary download failed. Building from source...");
   await buildFromSource(targetTriple);
   copyBuiltBinary(targetTriple, binaryName, binaryPath);
 
