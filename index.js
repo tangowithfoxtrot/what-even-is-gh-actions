@@ -7,6 +7,15 @@ const repoOwner = "tangowithfoxtrot";
 const repoName = "what-even-is-gh-actions";
 
 /**
+ * Prints a debug message only if RUNNER_DEBUG or ACTIONS_RUNNER_DEBUG are set
+ */
+function debug(message) {
+  if (process.env.RUNNER_DEBUG || process.env.ACTIONS_RUNNER_DEBUG) {
+    console.log(`::debug::${message}`);
+  }
+}
+
+/**
  * Gets the version from package.json
  */
 function getVersion() {
@@ -242,7 +251,7 @@ async function getBinary() {
     binaryName
   );
 
-  console.debug(`Looking for binary at: ${binaryPath}`);
+  debug(`Looking for binary at: ${binaryPath}`);
 
   if (fs.existsSync(binaryPath)) {
     return binaryPath;
