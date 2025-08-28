@@ -2217,8 +2217,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "04dc19736151f35336d325007ac991178d504a119863a2fcb3758cdb5e52c50d"
 
 [[package]]
-name = "sm-action"
-version = "3.0.0"
+name = "sm-action-bin"
+version = "3.0.0-bin"
 dependencies = [
  "anyhow",
  "bitwarden-core",
