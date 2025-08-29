@@ -3,6 +3,10 @@ name = "sm-action-bin"
 version = "3.0.0-bin"
 edition = "2024"
 
+[[bin]]
+name = "sm-action"
+path = "src/main.rs"
+
 [dependencies]
 anyhow = "1.0.99"
 
