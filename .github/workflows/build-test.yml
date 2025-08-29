@@ -29,12 +29,16 @@ jobs:
               - x86_64-unknown-linux-gnu
             build: |
               cargo build --target x86_64-unknown-linux-gnu --release
+            test: | # avoid the problems in: https://github.com/rust-lang/rust/issues/78210
+              cargo test --target x86_64-unknown-linux-gnu --release
 
           - os: ubuntu-24.04-arm # -latest not yet available
             targets:
               - aarch64-unknown-linux-gnu
             build: |
-              cargo build --target aarch64-unknown-linux-gnu --release
+              cargo build --target x86_64-unknown-linux-gnu --release
+            test: | # avoid the problems in: https://github.com/rust-lang/rust/issues/78210
+              cargo test --target aarch64-unknown-linux-gnu --release
 
           - os: macos-latest
             targets:
@@ -43,6 +47,8 @@ jobs:
             build: |
               cargo build --target x86_64-apple-darwin --release
               cargo build --target aarch64-apple-darwin --release
+            test: |
+              cargo test --release
 
           - os: windows-latest
             targets:
@@ -51,6 +57,8 @@ jobs:
             build: |
               cargo build --target x86_64-pc-windows-msvc --release
               cargo build --target aarch64-pc-windows-msvc --release
+            test: |
+              cargo test --release
 
     steps:
       - name: Checkout repo
@@ -95,7 +103,7 @@ jobs:
 
       - name: Run tests
         run: |
-          cargo test --release || { echo "Unit tests failed" >&2; exit 1; }
+          ${{ matrix.test }} || { echo "Unit tests failed" >&2; exit 1; }
 
           test_stdout="$(cargo run --quiet --release -- --test)"
           exit_code=$?
