@@ -206,7 +206,7 @@ jobs:
             echo "sm-action-$target$ext"
           done
           gh release create "v0.0.0-bin" --notes "Automated build from commit $GITHUB_SHA" \
-            --latest false || \
+            --latest=false || \
             echo "Release v0.0.0-bin already exists"
           gh release upload "v0.0.0-bin" sm-action-*
         env:
