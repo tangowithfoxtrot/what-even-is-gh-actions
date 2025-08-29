@@ -171,6 +171,7 @@ jobs:
             1e12e623-d4ce-43d2-a3d3-07918217d280 > SECRET_TWO
 
       - name: Print Output from existing sm-action
+        if: ${{ matrix.os != 'ubuntu-24.04-arm' }} # existing action does not support aarch64 linux
         run: |
           echo the following secrets should be masked:
           echo "SECRET_ONE=$SECRET_ONE"
@@ -183,6 +184,7 @@ jobs:
           echo
 
       - name: Compare GITHUB_OUTPUT values from both actions
+        if: ${{ matrix.os != 'ubuntu-24.04-arm' }} # existing action does not support aarch64 linux
         run: |
           if [ "${{ steps.rust-action.outputs.SECRET_ONE }}" != "${{ steps.sm-action.outputs.SECRET_ONE }}" ]; then
             echo "SECRET_ONE does not match between sm-action and existing sm-action" >&2
