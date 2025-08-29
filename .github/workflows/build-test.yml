@@ -30,8 +30,8 @@ jobs:
               - aarch64-unknown-linux-gnu
             static_libc: true
             build: |
-              cargo build --target x86_64-unknown-linux-musl --release
-              cargo build --target aarch64-unknown-linux-musl --release
+              cargo build --target x86_64-unknown-linux-gnu --release
+              cargo build --target aarch64-unknown-linux-gnu --release
 
           - os: macos-latest
             targets:
@@ -187,3 +187,19 @@ jobs:
             exit 1
           fi
           echo "All outputs match between sm-action and existing sm-action"
+
+      - name: Upload the build artifacts
+        # use the gh CLI to do this because we don't want to zip the files
+        run: |
+          echo renaming files to:
+          for target in ${{ join(matrix.targets, ' ') }}; do
+            ext=""
+            if [[ "$target" == *"windows"* ]]; then
+              ext=".exe"
+            fi
+            mv "target/$target/release/sm-action$ext" "sm-action-$target$ext"
+            echo "sm-action-$target$ext"
+          done
+          gh release upload "v0.0.0-test" sm-action-*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
