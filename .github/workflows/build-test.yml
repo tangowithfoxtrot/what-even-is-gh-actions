@@ -9,7 +9,7 @@ defaults:
     shell: bash
 
 permissions:
-  contents: read
+  contents: write # TODO: separate the release step into a different workflow later
 
 env:
   CARGO_TERM_COLOR: always
