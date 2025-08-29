@@ -209,10 +209,11 @@ jobs:
             echo "sm-action-$target$ext"
           done
 
+          git_commit_long=$(git rev-parse HEAD)
           gh release create "v0.0.0-bin" \
-            --notes "Automated build from commit: $(git rev-parse --short HEAD)" \
+            --notes "Automated build from commit: $git_commit_long \
             --prerelease || \
-            echo "Release v0.0.0-bin already exists"
+            gh release edit "v0.0.0-bin" --notes "Automated build from commit: $git_commit_long"
           for asset in $(ls sm-action-*); do
             gh release delete-asset "v0.0.0-bin" "$asset" || \
               echo "No existing asset $asset to delete"
