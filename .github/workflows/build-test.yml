@@ -212,6 +212,8 @@ jobs:
             --notes "Automated build from commit: $(git rev-parse --short HEAD)" \
             --prerelease || \
             echo "Release v0.0.0-bin already exists"
+          gh release delete-asset "v0.0.0-bin" sm-action-* || \
+            echo "No existing assets to delete"
           gh release upload "v0.0.0-bin" sm-action-*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
