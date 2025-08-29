@@ -28,7 +28,6 @@ jobs:
             targets:
               - x86_64-unknown-linux-gnu
               - aarch64-unknown-linux-gnu
-            static_libc: true
             build: |
               cargo build --target x86_64-unknown-linux-gnu --release
               cargo build --target aarch64-unknown-linux-gnu --release
