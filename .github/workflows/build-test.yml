@@ -94,9 +94,8 @@ jobs:
         run: ${{ matrix.build }}
 
       - name: Run tests
-        env:
-          RUSTFLAGS: > # avoid the problems in: https://github.com/rust-lang/rust/issues/78210
-            ${{ startsWith(matrix.os, 'ubuntu') && '"-C target-feature=-crt-static"' || '"-C target-feature=+crt-static"' }}
+        env: # avoid the problems in: https://github.com/rust-lang/rust/issues/78210
+          RUSTFLAGS: "-C target-feature=-crt-static"
         run: |
           cargo test --release || { echo "Unit tests failed" >&2; exit 1; }
 
