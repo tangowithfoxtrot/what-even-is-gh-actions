@@ -208,8 +208,9 @@ jobs:
             mv "target/$target/release/sm-action$ext" "sm-action-$target$ext"
             echo "sm-action-$target$ext"
           done
-          gh release create "v0.0.0-bin" --notes "Automated build from commit $GITHUB_SHA" \
-            --latest=false || \
+          gh release create "v0.0.0-bin" \
+            --notes "Automated build from commit: $(git rev-parse --short HEAD)" \
+            --prerelease || \
             echo "Release v0.0.0-bin already exists"
           gh release upload "v0.0.0-bin" sm-action-*
         env:
