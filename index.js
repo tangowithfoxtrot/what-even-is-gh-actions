@@ -6,45 +6,30 @@ const https = require("https");
 const repoOwner = "tangowithfoxtrot";
 const repoName = "what-even-is-gh-actions";
 
-/**
- * Prints a debug message only if RUNNER_DEBUG or ACTIONS_RUNNER_DEBUG are set
- */
 function debug(message) {
-  if (process.env.RUNNER_DEBUG || process.env.ACTIONS_RUNNER_DEBUG) {
+  if ("RUNNER_DEBUG" in process.env || "ACTIONS_RUNNER_DEBUG" in process.env) {
     console.log(`::debug::${message}`);
   }
 }
 
-/**
- * Gets the version from package.json
- */
 function getVersion() {
   const packagePath = path.join(__dirname, "package.json");
   const packageJson = JSON.parse(fs.readFileSync(packagePath, "utf8"));
   return packageJson.version;
 }
 
-/**
- * Ensures a directory exists, creating it recursively if needed
- */
 function ensureDirectoryExists(dirPath) {
   if (!fs.existsSync(dirPath)) {
     fs.mkdirSync(dirPath, { recursive: true });
   }
 }
 
-/**
- * Safely removes a file if it exists
- */
 function safeUnlink(filePath) {
   if (fs.existsSync(filePath)) {
     fs.unlinkSync(filePath);
   }
 }
 
-/**
- * Cleans up download resources
- */
 function cleanupDownload(file, request, outputPath) {
   file.close();
   safeUnlink(outputPath);
@@ -140,9 +125,6 @@ async function downloadBinary(targetTriple, binaryPath) {
   }
 }
 
-/**
- * Determines the target architecture for the Rust binary
- */
 function getArch() {
   const archMap = {
     x64: "x86_64",
@@ -150,53 +132,37 @@ function getArch() {
   };
 
   const arch = archMap[process.arch];
-  if (!arch) {
+  if (arch == null) {
     throw new Error(`Unsupported architecture: ${process.arch}`);
   }
 
   return arch;
 }
 
-/**
- * Determines the target platform for the Rust binary
- */
 function getPlatform() {
   const platformMap = {
-    linux: "unknown-linux-musl",
+    linux: "unknown-linux-gnu",
     darwin: "apple-darwin",
     win32: "pc-windows-msvc",
   };
 
   const platform = platformMap[process.platform];
-  if (!platform) {
+  if (platform == null) {
     throw new Error(`Unsupported platform: ${process.platform}`);
   }
 
   return platform;
 }
 
-/**
- * Gets the target triple for the current platform
- */
 function getTargetTriple() {
   return `${getArch()}-${getPlatform()}`;
 }
 
-/**
- * Gets the binary name for the current platform
- */
 function getBinaryName() {
   return process.platform === "win32" ? "sm-action.exe" : "sm-action";
 }
 
-/**
- * Ensures a Rust target is installed and builds the binary from source
- */
 async function buildFromSource(targetTriple) {
-  /**
-  We don't need static linking if building from source on the Runner,
-  so use GNU instead of MUSL for Linux builds because it's easier to compile
-  */
   const buildTarget = targetTriple.includes("linux")
     ? `${getArch()}-unknown-linux-gnu`
     : targetTriple;
@@ -217,9 +183,6 @@ async function buildFromSource(targetTriple) {
   });
 }
 
-/**
- * Copies built binary to the expected location
- */
 function copyBuiltBinary(targetTriple, binaryName, expectedPath) {
   const builtBinaryPath = path.join(
     __dirname,
@@ -237,9 +200,6 @@ function copyBuiltBinary(targetTriple, binaryName, expectedPath) {
   fs.copyFileSync(builtBinaryPath, expectedPath);
 }
 
-/**
- * Finds the Rust binary or builds it if necessary
- */
 async function getBinary() {
   const targetTriple = getTargetTriple();
   const binaryName = getBinaryName();
@@ -259,14 +219,12 @@ async function getBinary() {
 
   debug(`No sm-action binary found for target: ${targetTriple}`);
 
-  // Try to download the pre-built binary first
   const downloadSuccess = await downloadBinary(targetTriple, binaryPath);
 
   if (downloadSuccess) {
     return binaryPath;
   }
 
-  // Fallback to building from source
   console.log("sm-action binary download failed. Building from source...");
   await buildFromSource(targetTriple);
   copyBuiltBinary(targetTriple, binaryName, binaryPath);
@@ -274,18 +232,12 @@ async function getBinary() {
   return binaryPath;
 }
 
-/**
- * Makes a binary executable on Unix systems
- */
 function makeExecutable(binaryPath) {
   if (process.platform !== "win32") {
     fs.chmodSync(binaryPath, 0o755);
   }
 }
 
-/**
- * Main function that orchestrates the binary retrieval and execution
- */
 async function run() {
   try {
     const binaryPath = await getBinary();
@@ -297,5 +249,4 @@ async function run() {
   }
 }
 
-// Execute the main function
 run();

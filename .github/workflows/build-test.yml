@@ -14,6 +14,7 @@ permissions:
 env:
   CARGO_TERM_COLOR: always
   CARGO_TARGET_DIR: ./target
+  RUSTFLAGS: "-C target-feature=+crt-static"
 
 jobs:
   build:
@@ -25,20 +26,17 @@ jobs:
         include:
           - os: ubuntu-latest
             targets:
-              # build statically linked MUSL bins so we
-              # don't have to worry about GLIBC versions
-              - x86_64-unknown-linux-musl
-              - aarch64-unknown-linux-musl
-            use_cross: true
+              - x86_64-unknown-linux-gnu
+              - aarch64-unknown-linux-gnu
+            static_libc: true
             build: |
-              cross build --target x86_64-unknown-linux-musl --release
-              cross build --target aarch64-unknown-linux-musl --release
+              cargo build --target x86_64-unknown-linux-musl --release
+              cargo build --target aarch64-unknown-linux-musl --release
 
           - os: macos-latest
             targets:
               - x86_64-apple-darwin
               - aarch64-apple-darwin
-            use_cross: false
             build: |
               cargo build --target x86_64-apple-darwin --release
               cargo build --target aarch64-apple-darwin --release
@@ -47,7 +45,6 @@ jobs:
             targets:
               - x86_64-pc-windows-msvc
               - aarch64-pc-windows-msvc
-            use_cross: false
             build: |
               cargo build --target x86_64-pc-windows-msvc --release
               cargo build --target aarch64-pc-windows-msvc --release
@@ -70,10 +67,6 @@ jobs:
         with:
           toolchain: stable
           targets: ${{ join(matrix.targets, ',') }}
-
-      - name: Install cross (Linux only)
-        if: matrix.use_cross
-        run: cargo install cross --git https://github.com/cross-rs/cross
 
       - name: Cache cargo registry
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
@@ -134,12 +127,12 @@ jobs:
           fi
           echo
 
-          echo printing unredacted secrets from GITHUB_OUTPUT:
+          echo printing unmasked secrets with spaces between each character from GITHUB_OUTPUT:
           echo "${{ steps.set-env-false.outputs.SECRET_NO_ENV_ONE }}" | sed 's/./& /g'
           echo "${{ steps.set-env-false.outputs.SECRET_NO_ENV_TWO }}" | sed 's/./& /g'
           echo
 
-      - name: Run the Action
+      - name: Run the Rust Action
         id: rust-action
         uses: ./
         with:
@@ -156,7 +149,7 @@ jobs:
           echo "SECRET_TWO=$SECRET_TWO"
           echo
 
-          echo the following secrets should not be masked:
+          echo the following should be unmasked secret values with spaces between each character:
           echo "$SECRET_ONE" | sed 's/./& /g'
           echo "$SECRET_TWO" | sed 's/./& /g'
           echo
@@ -178,12 +171,12 @@ jobs:
           echo "SECRET_TWO=$SECRET_TWO"
           echo
 
-          echo the following secrets should not be masked:
+          echo the following should be unmasked secret values with spaces between each character:
           echo "$SECRET_ONE" | sed 's/./& /g'
           echo "$SECRET_TWO" | sed 's/./& /g'
           echo
 
-      - name: Compare outputs
+      - name: Compare GITHUB_OUTPUT values from both actions
         run: |
           if [ "${{ steps.rust-action.outputs.SECRET_ONE }}" != "${{ steps.sm-action.outputs.SECRET_ONE }}" ]; then
             echo "SECRET_ONE does not match between sm-action and existing sm-action" >&2
@@ -193,4 +186,4 @@ jobs:
             echo "SECRET_TWO does not match between sm-action and existing sm-action" >&2
             exit 1
           fi
-          echo "All outputs match successfully between sm-action and existing sm-action"
+          echo "All outputs match between sm-action and existing sm-action"
