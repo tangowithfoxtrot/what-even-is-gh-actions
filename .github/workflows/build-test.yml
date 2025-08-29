@@ -208,13 +208,12 @@ jobs:
             mv "target/$target/release/sm-action$ext" "sm-action-$target$ext"
             echo "sm-action-$target$ext"
           done
-
-          gh release delete "v0.0.0-bin" --yes \
-            || echo "Release v0.0.0-bin does not exist, creating new one"
           gh release create "v0.0.0-bin" \
             --notes "Automated build from commit: $(git rev-parse --short HEAD)" \
-            --prerelease \
-              || echo "Release v0.0.0-bin already exists"
+            --prerelease || \
+            echo "Release v0.0.0-bin already exists"
+          gh release delete-asset "v0.0.0-bin" sm-action-* || \
+            echo "No existing assets to delete"
           gh release upload "v0.0.0-bin" sm-action-*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
