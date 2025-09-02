@@ -210,14 +210,14 @@ jobs:
           done
 
           git_commit_long=$(git rev-parse HEAD)
+
+          gh release delete "v0.0.0" || true
+          git tag -d "v0.0.0" || true
+          git push origin --delete "v0.0.0" || true
+
           gh release create "v0.0.0" \
             --notes "Automated build from commit: $git_commit_long" \
-            --prerelease || \
-            gh release edit "v0.0.0" --notes "Automated build from commit: $git_commit_long"
-          for asset in $(ls sm-action-*); do
-            gh release delete-asset "v0.0.0" "$asset" || \
-              echo "No existing asset $asset to delete"
-          done
+            --prerelease
           gh release upload "v0.0.0" sm-action-*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
