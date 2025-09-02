@@ -97,7 +97,7 @@ function downloadFile(url, outputPath) {
  * Constructs the GitHub release download URL
  */
 function buildDownloadUrl(targetTriple, version) {
-  const releaseVersion = `${version}-bin`;
+  const releaseVersion = `${version}`;
   const assetName = `sm-action-${targetTriple}${
     process.platform === "win32" ? ".exe" : ""
   }`;
