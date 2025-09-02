@@ -102,7 +102,7 @@ jobs:
           test_stdout="$(cargo run --quiet --release -- --test)"
           exit_code=$?
 
-          if [ $exit_code -eq 0 && "$test_stdout" == *"success"* ]; then
+          if [[ $exit_code -eq 0 && "$test_stdout" == *"success"* ]]; then
             echo "Binary execution tests passed"
           else
             echo "Binary execution tests failed with exit code $exit_code" >&2
