@@ -2,7 +2,7 @@ const { execSync } = require("node:child_process");
 const fs = require("fs");
 const path = require("path");
 const https = require("https");
-const { exit } = require("node:process");
+const version = require("./version").version;
 
 const repoOwner = "tangowithfoxtrot";
 const repoName = "what-even-is-gh-actions";
@@ -19,16 +19,7 @@ function getVersion() {
     return process.env.SM_ACTION_VERSION;
   }
 
-  const packagePath = path.join(__dirname, "Cargo.toml");
-  const cargoToml = fs.readFileSync(packagePath, "utf8");
-  const versionMatch = cargoToml.match(/version\s*=\s*"([^"]+)"/);
-
-  if (!versionMatch) {
-    throw new Error("Failed to extract version from Cargo.toml");
-  }
-
-  const version = `v${versionMatch[1]}`;
-
+  console.log(`Using version from version.js: ${version}`);
   return version;
 }
 
