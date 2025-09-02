@@ -211,7 +211,7 @@ jobs:
 
           git_commit_long=$(git rev-parse HEAD)
           gh release create "v0.0.0" \
-            --notes "Automated build from commit: $git_commit_long \
+            --notes "Automated build from commit: $git_commit_long" \
             --prerelease || \
             gh release edit "v0.0.0" --notes "Automated build from commit: $git_commit_long"
           for asset in $(ls sm-action-*); do
