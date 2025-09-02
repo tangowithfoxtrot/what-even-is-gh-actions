@@ -1,6 +1,5 @@
 {
   "name": "bitwarden-sm-action",
-  "version": "3.0.0",
   "description": "GitHub action for retrieving secrets from Bitwarden Secrets Manager",
   "main": "index.js",
   "scripts": {
