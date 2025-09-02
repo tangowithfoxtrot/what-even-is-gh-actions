@@ -2,6 +2,7 @@ const { execSync } = require("node:child_process");
 const fs = require("fs");
 const path = require("path");
 const https = require("https");
+const { exit } = require("node:process");
 
 const repoOwner = "tangowithfoxtrot";
 const repoName = "what-even-is-gh-actions";
@@ -13,9 +14,22 @@ function debug(message) {
 }
 
 function getVersion() {
-  const packagePath = path.join(__dirname, "package.json");
-  const packageJson = JSON.parse(fs.readFileSync(packagePath, "utf8"));
-  return packageJson.version;
+  if ("SM_ACTION_VERSION" in process.env) {
+    console.log(`Using version from environment: ${process.env.SM_ACTION_VERSION}`);
+    return process.env.SM_ACTION_VERSION;
+  }
+
+  const packagePath = path.join(__dirname, "Cargo.toml");
+  const cargoToml = fs.readFileSync(packagePath, "utf8");
+  const versionMatch = cargoToml.match(/version\s*=\s*"([^"]+)"/);
+
+  if (!versionMatch) {
+    throw new Error("Failed to extract version from Cargo.toml");
+  }
+
+  const version = `v${versionMatch[1]}`;
+
+  return version;
 }
 
 function ensureDirectoryExists(dirPath) {
