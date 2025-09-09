@@ -12,7 +12,7 @@ bitwarden-sm = { git = "https://github.com/bitwarden/sdk-internal.git", branch =
 bitwarden-vault = { git = "https://github.com/bitwarden/sdk-internal.git", branch = "sm-action-rs" }
 
 tokio = { version = "1.47.1", features = ["macros", "rt-multi-thread"] }
-uuid = "1.18.0"
+uuid = "1.18.1"
 
 [profile.release]
 strip = true
